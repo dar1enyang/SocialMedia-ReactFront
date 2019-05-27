@@ -52,6 +52,7 @@ class Users extends Component {
     return (
       <div className="container">
         <h2 className="mt-5 mb-5">Users</h2>
+
         {this.renderUsers(users)}
       </div>
     );

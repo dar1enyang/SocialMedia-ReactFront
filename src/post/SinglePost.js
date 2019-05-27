@@ -3,14 +3,16 @@ import { singlePost, remove, like, unlike } from './apiPost';
 import DefaultPost from '../images/mountains.jpg';
 import { Link, Redirect } from 'react-router-dom';
 import { isAuthenticated } from '../auth';
+import Comment from './Comment';
 
 class SinglePost extends Component {
   state = {
     post: '',
     redirectToHome: false,
-    redirectSignin: false,
+    redirectToSignin: false,
     like: false,
-    likes: 0
+    likes: 0,
+    comments: []
   };
 
   checkLike = likes => {
@@ -28,21 +30,27 @@ class SinglePost extends Component {
         this.setState({
           post: data,
           likes: data.likes.length,
-          like: this.checkLike(data.likes)
+          like: this.checkLike(data.likes),
+          comments: data.comments
         });
       }
     });
   };
 
+  updateComments = comments => {
+    this.setState({ comments });
+  };
+
   likeToggle = () => {
     if (!isAuthenticated()) {
-      this.setState({ redirectSignin: true });
+      this.setState({ redirectToSignin: true });
       return false;
     }
     let callApi = this.state.like ? unlike : like;
     const userId = isAuthenticated().user._id;
     const postId = this.state.post._id;
     const token = isAuthenticated().token;
+
     callApi(userId, token, postId).then(data => {
       if (data.error) {
         console.log(data.error);
@@ -68,7 +76,7 @@ class SinglePost extends Component {
   };
 
   deleteConfirmed = () => {
-    let answer = window.confirm('Are you sure you want to delete this post?');
+    let answer = window.confirm('Are you sure you want to delete your post?');
     if (answer) {
       this.deletePost();
     }
@@ -87,7 +95,11 @@ class SinglePost extends Component {
           alt={post.title}
           onError={i => (i.target.src = `${DefaultPost}`)}
           className="img-thunbnail mb-3"
-          style={{ height: '300px', width: '100%', objectFit: 'cover' }}
+          style={{
+            height: '300px',
+            width: '100%',
+            objectFit: 'cover'
+          }}
         />
 
         {like ? (
@@ -111,7 +123,7 @@ class SinglePost extends Component {
         <p className="card-text">{post.body}</p>
         <br />
         <p className="font-italic mark">
-          Posted bt <Link to={`${posterId}`}>{posterName} </Link>
+          Posted by <Link to={`${posterId}`}>{posterName} </Link>
           on {new Date(post.created).toDateString()}
         </p>
         <div className="d-inline-block">
@@ -136,16 +148,40 @@ class SinglePost extends Component {
                 </button>
               </>
             )}
+
+          <div>
+            {isAuthenticated().user && isAuthenticated().user.role === 'admin' && (
+              <div class="card mt-5">
+                <div className="card-body">
+                  <h5 className="card-title">Admin</h5>
+                  <p className="mb-2 text-danger">Edit/Delete as an Admin</p>
+                  <Link
+                    to={`/post/edit/${post._id}`}
+                    className="btn btn-raised btn-warning btn-sm mr-5"
+                  >
+                    Update Post
+                  </Link>
+                  <button
+                    onClick={this.deleteConfirmed}
+                    className="btn btn-raised btn-danger"
+                  >
+                    Delete Post
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
   };
 
   render() {
-    const { post, redirectSignin, redirectToHome } = this.state;
+    const { post, redirectToHome, redirectToSignin, comments } = this.state;
+
     if (redirectToHome) {
       return <Redirect to={`/`} />;
-    } else if (redirectSignin) {
+    } else if (redirectToSignin) {
       return <Redirect to={`/signin`} />;
     }
 
@@ -160,6 +196,12 @@ class SinglePost extends Component {
         ) : (
           this.renderPost(post)
         )}
+
+        <Comment
+          postId={post._id}
+          comments={comments.reverse()}
+          updateComments={this.updateComments}
+        />
       </div>
     );
   }

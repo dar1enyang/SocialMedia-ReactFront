@@ -7,7 +7,7 @@
   "env": {
     "browser": true,
     "node": true
-  },
+  },    
   "extends": "airbnb-base",
   "rules": {
     "semi": [2, "never"],
